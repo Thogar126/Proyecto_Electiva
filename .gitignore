@@ -1,0 +1,23 @@
+﻿# Entornos virtuales de Python
+.venv/
+.venv_viejo/
+venv/
+env/
+
+# Dependencias y archivos generados
+site-packages/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Editores y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

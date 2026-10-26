@@ -1,0 +1,4 @@
+[
+  {"codigo": "DEMO0001", "cliente": "Laura", "servicio": "corte", "fecha": "2026-11-03", "hora": "10:00", "estado": "activa"},
+  {"codigo": "DEMO0002", "cliente": "Andrés", "servicio": "corte_barba", "fecha": "2026-11-03", "hora": "11:00", "estado": "activa"}
+]

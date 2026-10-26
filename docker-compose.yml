@@ -1,0 +1,31 @@
+services:
+  api:
+    build: .
+    command: uvicorn main:app --host 0.0.0.0 --port 8011
+    environment:
+      RESERVAS_DB: /data/reservas.db
+    volumes:
+      - ./data:/data
+    ports:
+      - "8011:8011"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8011/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    build: .
+    command: python app_gradio.py
+    environment:
+      CHATBOT_API_URL: http://api:8011
+      GRADIO_SERVER_NAME: 0.0.0.0
+      GROQ_API_KEY: ${GROQ_API_KEY:?Define GROQ_API_KEY en el archivo .env}
+      GROQ_MODEL: ${GROQ_MODEL:?Define GROQ_MODEL en el archivo .env}
+    ports:
+      - "7860:7860"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

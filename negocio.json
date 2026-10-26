@@ -1,0 +1,16 @@
+{
+  "nombre": "BarberBot",
+  "descripcion": "Barbería BarberBot",
+  "horario": {
+    "apertura": "09:00",
+    "cierre": "18:00",
+    "dias": [0, 1, 2, 3, 4, 5],
+    "paso_minutos": 30
+  },
+  "servicios": {
+    "corte": {"nombre": "Corte de cabello", "precio_cop": 25000, "duracion_minutos": 30},
+    "barba": {"nombre": "Arreglo de barba", "precio_cop": 15000, "duracion_minutos": 30},
+    "corte_barba": {"nombre": "Corte + barba", "precio_cop": 35000, "duracion_minutos": 60},
+    "tinte": {"nombre": "Tinte de cabello", "precio_cop": 60000, "duracion_minutos": 90}
+  }
+}
