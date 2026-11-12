@@ -26,6 +26,8 @@ def url_api():
 def cargar_negocio():
     return json.loads((BASE / "negocio.json").read_text(encoding="utf-8-sig"))
 
+def peticion_json(url, metodo="GET", datos=None, headers=None):
+       return _peticion(url, metodo, datos, headers)
 
 def _peticion(url, metodo="GET", cuerpo=None, cabeceras=None):
     datos = None if cuerpo is None else json.dumps(cuerpo).encode("utf-8")

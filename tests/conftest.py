@@ -1,11 +1,13 @@
+import os
 import sys
 from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+os.environ.setdefault("CHATBOT_API_KEY", "clave-de-prueba-123456")
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 def proximo(dia_semana, desde=7):
     """Primera fecha futura (lunes=0 ... domingo=6) a partir de hoy + `desde` días."""

@@ -12,7 +12,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from almacen_sqlite import AgendaSQLite, ConflictoReserva, ReservaNoEncontrada
+from almacen_sqlite import ConflictoReserva, ReservaNoEncontrada
+from api_telegram import AgendaTelegram, crear_router
 
 BASE = Path(__file__).resolve().parent
 
@@ -55,7 +56,7 @@ def crear_app(ruta_db=None):
     ruta_db = Path(ruta_db or os.getenv("RESERVAS_DB") or BASE / "reservas.db")
     ruta_db.parent.mkdir(parents=True, exist_ok=True)
 
-    agenda = AgendaSQLite(
+    agenda = AgendaTelegram(
         ruta_db,
         servicios,
         apertura=horario["apertura"],
@@ -65,6 +66,7 @@ def crear_app(ruta_db=None):
     )
     app = FastAPI(title=f"{negocio['nombre']} · API de reservas", version="1.0.0")
     app.state.agenda = agenda
+    app.include_router(crear_router(agenda, os.environ.get("CHATBOT_API_KEY", "")))
 
     @app.get("/health")
     def salud():
