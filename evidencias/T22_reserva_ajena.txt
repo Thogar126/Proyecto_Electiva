@@ -1,0 +1,11 @@
+# T22 - La cuenta 222 intenta ver/modificar/cancelar la reserva de la 111
+# Generado el 2026-11-21 con evidencias/verificar_backend.py (API real + SQLite temporal)
+
+[cuenta 222] GET /telegram/reservas/AF32116C
+    -> HTTP 403 {"detail": "Esa reserva no pertenece a tu cuenta"}
+[cuenta 222] PUT /telegram/reservas/AF32116C  cuerpo={"servicio": "corte", "fecha": "2026-11-30", "hora": "15:00"}
+    -> HTTP 403 {"detail": "Esa reserva no pertenece a tu cuenta"}
+[cuenta 222] DELETE /telegram/reservas/AF32116C
+    -> HTTP 403 {"detail": "Esa reserva no pertenece a tu cuenta"}
+SQLite> SELECT codigo, cliente, propietario, servicio, fecha, hora, estado FROM reservas ORDER BY fecha, hora
+    AF32116C | Laura | 111 | corte_barba | 2026-11-30 | 10:00 | activa

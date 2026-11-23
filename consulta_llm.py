@@ -8,7 +8,7 @@ import json
 import os
 import urllib.request
 from pathlib import Path
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 
 BASE = Path(__file__).resolve().parent
@@ -39,8 +39,14 @@ def _peticion(url, metodo="GET", cuerpo=None, cabeceras=None):
     return json.loads(texto) if texto else None
 
 
-def peticion_api(metodo, ruta, cuerpo=None):
-    return _peticion(url_api() + ruta, metodo, cuerpo)
+def cabeceras_telegram(usuario):
+    """Cabeceras de las rutas /telegram: clave privada compartida y cuenta de Telegram."""
+    return {"X-Clave-Privada": os.getenv("API_PRIVATE_KEY", ""), "X-Usuario-Telegram": str(usuario)}
+
+
+def peticion_api(metodo, ruta, cuerpo=None, usuario=None):
+    cabeceras = cabeceras_telegram(usuario) if usuario is not None else None
+    return _peticion(url_api() + ruta, metodo, cuerpo, cabeceras)
 
 
 def llamar_groq(mensajes, clave, modelo):
@@ -51,7 +57,15 @@ def llamar_groq(mensajes, clave, modelo):
         "temperature": 0,
         "response_format": {"type": "json_object"},
     }
-    respuesta = _peticion(GROQ_URL, "POST", cuerpo, {"Authorization": f"Bearer {clave}"})
+    for intento in range(2):  # un reintento ante fallos de red momentáneos (no ante errores HTTP)
+        try:
+            respuesta = _peticion(GROQ_URL, "POST", cuerpo, {"Authorization": f"Bearer {clave}"})
+            break
+        except HTTPError:
+            raise
+        except (URLError, TimeoutError):
+            if intento == 1:
+                raise
     return json.loads(respuesta["choices"][0]["message"]["content"])
 
 
@@ -98,11 +112,19 @@ def formatear(accion, datos):
     return f"{etiquetas[accion]}:\n- " + linea_reserva(datos)
 
 
-def ejecutar(plan, confirmar=False):
-    """Ejecuta un plan contra FastAPI. Las escrituras exigen confirmar=True."""
+def ejecutar(plan, confirmar=False, usuario=None, solicitud_id=None):
+    """Ejecuta un plan contra FastAPI. Las escrituras exigen confirmar=True.
+
+    Con `usuario` (Telegram) las reservas pasan por /telegram/..., que aplica la clave
+    privada y la propiedad de cada reserva; sin él se usan las rutas /api (Gradio).
+    """
     accion = plan.get("accion")
     if accion in ESCRITURAS and not confirmar:
         raise ValueError("La operación debe estar confirmada")
+
+    base = "/telegram" if usuario is not None else "/api"
+    kw = {"usuario": usuario} if usuario is not None else {}
+    codigo = quote(plan.get("codigo") or "", safe="")
 
     if accion == "servicios":
         datos = peticion_api("GET", "/api/servicios")
@@ -110,18 +132,20 @@ def ejecutar(plan, confirmar=False):
         consulta = urlencode({"fecha": plan["fecha"], "servicio": plan["servicio"]})
         datos = peticion_api("GET", f"/api/disponibilidad?{consulta}")
     elif accion == "listar":
-        datos = peticion_api("GET", "/api/reservas")
+        datos = peticion_api("GET", f"{base}/reservas", **kw)
     elif accion == "consultar":
-        datos = peticion_api("GET", f"/api/reservas/{quote(plan['codigo'], safe='')}")
+        datos = peticion_api("GET", f"{base}/reservas/{codigo}", **kw)
     elif accion == "crear":
-        datos = peticion_api("POST", "/api/reservas", {
-            "cliente": plan["cliente"], "servicio": plan["servicio"],
-            "fecha": plan["fecha"], "hora": plan["hora"], "confirmada": True})
+        cuerpo = {"cliente": plan["cliente"], "servicio": plan["servicio"],
+                  "fecha": plan["fecha"], "hora": plan["hora"], "confirmada": True}
+        if usuario is not None:
+            cuerpo["solicitud_id"] = solicitud_id or ""
+        datos = peticion_api("POST", f"{base}/reservas", cuerpo, **kw)
     elif accion == "modificar":
-        datos = peticion_api("PUT", f"/api/reservas/{quote(plan['codigo'], safe='')}", {
-            "servicio": plan["servicio"], "fecha": plan["fecha"], "hora": plan["hora"]})
+        datos = peticion_api("PUT", f"{base}/reservas/{codigo}", {
+            "servicio": plan["servicio"], "fecha": plan["fecha"], "hora": plan["hora"]}, **kw)
     elif accion == "cancelar":
-        datos = peticion_api("DELETE", f"/api/reservas/{quote(plan['codigo'], safe='')}")
+        datos = peticion_api("DELETE", f"{base}/reservas/{codigo}", **kw)
     else:
         raise ValueError(f"Acción no ejecutable: {accion}")
     return {"tipo": "resultado", "mensaje": formatear(accion, datos), "datos": datos}

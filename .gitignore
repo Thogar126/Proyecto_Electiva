@@ -1,20 +1,25 @@
-﻿# Entornos virtuales de Python
+# Entornos virtuales
 .venv/
 .venv_viejo/
 venv/
 env/
 
-# Dependencias y archivos generados
-site-packages/
+# Cachés y archivos generados
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+site-packages/
 
-# Variables de entorno y secretos
+# Secretos
 .env
 .env.*
 !.env.example
+
+# Bases de datos locales (se crean solas al iniciar la API)
+*.db
+*.sqlite3
+data/
 
 # Editores y sistema
 .vscode/

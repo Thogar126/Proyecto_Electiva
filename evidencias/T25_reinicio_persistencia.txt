@@ -1,0 +1,6 @@
+# T25 - Tras reiniciar la API las reservas siguen en SQLite (el historial del bot vive en memoria y se pierde)
+# Generado el 2026-11-21 con evidencias/verificar_backend.py (API real + SQLite temporal)
+
+Antes: la API se detiene. Se reconstruye AgendaSQLite sobre la misma base (equivale a reiniciar uvicorn).
+Reservas de la cuenta 222 tras el reinicio: 1
+    {"codigo": "D7AEAB88", "cliente": "Pedro", "servicio": "corte", "fecha": "2026-11-30", "hora": "14:00", "duracion_minutos": 30, "estado": "activa", "propietario": "222", "solicitud_id": "solicitud-T19-B"}

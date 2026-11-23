@@ -17,6 +17,10 @@ class ReservaNoEncontrada(ValueError):
     pass
 
 
+class ReservaAjena(ValueError):
+    pass
+
+
 def minutos(hora):
     if not isinstance(hora, str) or not re.fullmatch(r"\d{2}:\d{2}", hora):
         raise ValueError("Usa una hora HH:MM")
@@ -50,6 +54,14 @@ class AgendaSQLite:
                 estado TEXT NOT NULL CHECK (estado IN ('activa', 'cancelada'))
             )""")
             con.execute("CREATE INDEX IF NOT EXISTS idx_fecha_estado ON reservas(fecha, estado)")
+            # Migración suave: bases anteriores no tienen propietario ni solicitud_id.
+            columnas = {fila["name"] for fila in con.execute("PRAGMA table_info(reservas)")}
+            if "propietario" not in columnas:
+                con.execute("ALTER TABLE reservas ADD COLUMN propietario TEXT")
+            if "solicitud_id" not in columnas:
+                con.execute("ALTER TABLE reservas ADD COLUMN solicitud_id TEXT")
+            con.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_solicitud ON reservas(solicitud_id) "
+                        "WHERE solicitud_id IS NOT NULL")
 
     @contextmanager
     def conexion(self, escritura=False):
@@ -129,26 +141,47 @@ class AgendaSQLite:
         with self.conexion() as con:
             return self.obtener(con, codigo)
 
-    def crear(self, cliente, servicio, fecha, hora):
+    def listar_de(self, propietario):
+        with self.conexion() as con:
+            return [dict(f) for f in con.execute(
+                "SELECT * FROM reservas WHERE propietario=? ORDER BY fecha, hora, codigo", (propietario,))]
+
+    @staticmethod
+    def exigir_propietario(reserva, propietario):
+        if reserva.get("propietario") != propietario:
+            raise ReservaAjena("Esa reserva no pertenece a tu cuenta")
+
+    def crear(self, cliente, servicio, fecha, hora, propietario=None, solicitud_id=None):
+        """Crea una reserva. Con solicitud_id es idempotente: repetir la misma solicitud
+        devuelve la reserva ya creada (clave 'repetida') en lugar de duplicarla."""
         if not isinstance(cliente, str) or len(cliente.strip()) < 2:
             raise ValueError("Indica el nombre del cliente")
         duracion = self.duracion(servicio)
         inicio = self.validar_intervalo(fecha, hora, duracion)
         codigo = uuid4().hex[:8].upper()
         with self.conexion(escritura=True) as con:
+            if solicitud_id:
+                previa = con.execute("SELECT * FROM reservas WHERE solicitud_id=? AND propietario IS ?",
+                                     (solicitud_id, propietario)).fetchone()
+                if previa is not None:
+                    return {**dict(previa), "repetida": True}
             if self.ocupado(con, fecha, inicio, duracion):
                 raise ConflictoReserva("El intervalo solicitado se cruza con una reserva activa")
             con.execute(
-                "INSERT INTO reservas VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (codigo, cliente.strip(), servicio, fecha, hora, duracion, "activa"),
+                "INSERT INTO reservas (codigo, cliente, servicio, fecha, hora, duracion_minutos, estado,"
+                " propietario, solicitud_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (codigo, cliente.strip(), servicio, fecha, hora, duracion, "activa",
+                 propietario, solicitud_id or None),
             )
             return self.obtener(con, codigo)
 
-    def modificar(self, codigo, servicio, fecha, hora):
+    def modificar(self, codigo, servicio, fecha, hora, propietario=...):
         duracion = self.duracion(servicio)
         inicio = self.validar_intervalo(fecha, hora, duracion)
         with self.conexion(escritura=True) as con:
             actual = self.obtener(con, codigo)
+            if propietario is not ...:
+                self.exigir_propietario(actual, propietario)
             if actual["estado"] != "activa":
                 raise ConflictoReserva("La reserva ya no está activa")
             if self.ocupado(con, fecha, inicio, duracion, excluir=codigo):
@@ -159,9 +192,11 @@ class AgendaSQLite:
             )
             return self.obtener(con, codigo)
 
-    def cancelar(self, codigo):
+    def cancelar(self, codigo, propietario=...):
         with self.conexion(escritura=True) as con:
             actual = self.obtener(con, codigo)
+            if propietario is not ...:
+                self.exigir_propietario(actual, propietario)
             if actual["estado"] != "activa":
                 raise ConflictoReserva("La reserva ya está cancelada")
             con.execute("UPDATE reservas SET estado='cancelada' WHERE codigo=?", (codigo,))
@@ -200,13 +235,14 @@ class AgendaSQLite:
                 fila = {**datos, "duracion_minutos": duracion}
                 previa = con.execute("SELECT * FROM reservas WHERE codigo=?", (datos["codigo"],)).fetchone()
                 if previa is not None:
-                    if dict(previa) != fila:
+                    if {c: dict(previa)[c] for c in fila} != fila:
                         raise ConflictoReserva("El código ya existe con datos distintos; revisa la migración")
                     existentes += 1
                     continue
                 if datos["estado"] == "activa" and self.ocupado(con, datos["fecha"], inicio, duracion):
                     raise ConflictoReserva("El JSON contiene un intervalo activo que se cruza con otro")
-                con.execute("INSERT INTO reservas VALUES (?, ?, ?, ?, ?, ?, ?)",
+                con.execute("INSERT INTO reservas (codigo, cliente, servicio, fecha, hora, duracion_minutos,"
+                            " estado) VALUES (?, ?, ?, ?, ?, ?, ?)",
                             tuple(fila[campo] for campo in
                                   ("codigo", "cliente", "servicio", "fecha", "hora", "duracion_minutos", "estado")))
                 nuevos += 1

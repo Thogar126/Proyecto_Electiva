@@ -1,0 +1,9 @@
+# T19 - Cada cuenta lista solo sus reservas
+# Generado el 2026-11-21 con evidencias/verificar_backend.py (API real + SQLite temporal)
+
+[cuenta 222] POST /telegram/reservas  cuerpo={"cliente": "Pedro", "servicio": "corte", "fecha": "2026-11-30", "hora": "14:00", "confirmada": true, "solicitud_id": "solicitud-T19-B"}
+    -> HTTP 201 {"codigo": "D7AEAB88", "cliente": "Pedro", "servicio": "corte", "fecha": "2026-11-30", "hora": "14:00", "duracion_minutos": 30, "estado": "activa", "propietario": "222", "solicitud_id": "solicitud-T19-B"}
+[cuenta 111] GET /telegram/reservas
+    -> HTTP 200 [{"codigo": "AF32116C", "cliente": "Laura", "servicio": "corte_barba", "fecha": "2026-11-30", "hora": "10:00", "duracion_minutos": 60, "estado": "activa", "propietario": "111", "solicitud_id": "solicitud-T18-A"}]
+[cuenta 222] GET /telegram/reservas
+    -> HTTP 200 [{"codigo": "D7AEAB88", "cliente": "Pedro", "servicio": "corte", "fecha": "2026-11-30", "hora": "14:00", "duracion_minutos": 30, "estado": "activa", "propietario": "222", "solicitud_id": "solicitud-T19-B"}]

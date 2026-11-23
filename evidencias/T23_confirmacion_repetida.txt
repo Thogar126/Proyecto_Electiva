@@ -1,0 +1,9 @@
+# T23 - La misma solicitud confirmada dos veces no duplica (la 2a responde 200, repetida=true)
+# Generado el 2026-11-21 con evidencias/verificar_backend.py (API real + SQLite temporal)
+
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "fecha": "2026-11-30", "hora": "16:00", "confirmada": true, "solicitud_id": "solicitud-T23-D"}
+    -> HTTP 201 {"codigo": "145FACA1", "cliente": "Laura", "servicio": "corte", "fecha": "2026-11-30", "hora": "16:00", "duracion_minutos": 30, "estado": "activa", "propietario": "111", "solicitud_id": "solicitud-T23-D"}
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "fecha": "2026-11-30", "hora": "16:00", "confirmada": true, "solicitud_id": "solicitud-T23-D"}
+    -> HTTP 200 {"codigo": "145FACA1", "cliente": "Laura", "servicio": "corte", "fecha": "2026-11-30", "hora": "16:00", "duracion_minutos": 30, "estado": "activa", "propietario": "111", "solicitud_id": "solicitud-T23-D", "repetida": true}
+SQLite> SELECT COUNT(*) AS filas_con_esa_solicitud FROM reservas WHERE solicitud_id='solicitud-T23-D'
+    1

@@ -1,0 +1,17 @@
+# T24 - Fecha pasada, domingo, fuera de horario, fuera de paso, fecha inexistente y clave incorrecta: nada se guarda
+# Generado el 2026-11-21 con evidencias/verificar_backend.py (API real + SQLite temporal)
+
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "confirmada": true, "fecha": "2026-11-20", "hora": "10:00", "solicitud_id": "solicitud-T24-0"}
+    -> HTTP 422 {"detail": "No se puede reservar en una fecha pasada"}
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "confirmada": true, "fecha": "2026-11-29", "hora": "10:00", "solicitud_id": "solicitud-T24-1"}
+    -> HTTP 422 {"detail": "El negocio está cerrado ese día"}
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "confirmada": true, "fecha": "2026-11-30", "hora": "18:00", "solicitud_id": "solicitud-T24-2"}
+    -> HTTP 422 {"detail": "La atención debe terminar dentro del horario del negocio"}
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "confirmada": true, "fecha": "2026-11-30", "hora": "10:15", "solicitud_id": "solicitud-T24-3"}
+    -> HTTP 422 {"detail": "Selecciona una hora en pasos de 30 minutos"}
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "confirmada": true, "fecha": "2030-99-14", "hora": "10:00", "solicitud_id": "solicitud-T24-4"}
+    -> HTTP 422 {"detail": [{"type": "date_from_datetime_parsing", "loc": ["body", "fecha"], "msg": "Input should be a valid date or datetime, month value is outside expected range of 1-12", "input": "2030-99-14", "ctx": {"error": "month value is outside expected range of 1-12"}}]}
+[cuenta 111] POST /telegram/reservas  cuerpo={"cliente": "Laura", "servicio": "corte", "fecha": "2026-11-30", "hora": "10:00", "confirmada": true, "solicitud_id": "solicitud-T24-x"}
+    -> HTTP 401 {"detail": "Clave privada inválida"}
+SQLite> SELECT COUNT(*) AS filas_T24 FROM reservas WHERE solicitud_id LIKE 'solicitud-T24-%'
+    0

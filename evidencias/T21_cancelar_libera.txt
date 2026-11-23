@@ -1,0 +1,12 @@
+# T21 - Cancelar propia: estado=cancelada y el intervalo se libera
+# Generado el 2026-11-21 con evidencias/verificar_backend.py (API real + SQLite temporal)
+
+[cuenta 111] GET /api/disponibilidad?fecha=2026-11-30&servicio=corte
+    -> HTTP 200 {"fecha": "2026-11-30", "servicio": "corte", "duracion_minutos": 30, "horas": ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"]}
+[cuenta 111] DELETE /telegram/reservas/AF32116C
+    -> HTTP 200 {"codigo": "AF32116C", "cliente": "Laura", "servicio": "corte_barba", "fecha": "2026-11-30", "hora": "13:00", "duracion_minutos": 60, "estado": "cancelada", "propietario": "111", "solicitud_id": "solicitud-T18-A"}
+[cuenta 111] GET /api/disponibilidad?fecha=2026-11-30&servicio=corte
+    -> HTTP 200 {"fecha": "2026-11-30", "servicio": "corte", "duracion_minutos": 30, "horas": ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"]}
+SQLite> SELECT codigo, cliente, propietario, servicio, fecha, hora, estado FROM reservas ORDER BY fecha, hora
+    AF32116C | Laura | 111 | corte_barba | 2026-11-30 | 13:00 | cancelada
+    D7AEAB88 | Pedro | 222 | corte | 2026-11-30 | 14:00 | activa

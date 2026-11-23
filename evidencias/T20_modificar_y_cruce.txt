@@ -1,0 +1,12 @@
+# T20 - Cruce al crear (409), modificación a hora libre (200) y a hora ocupada (409, datos conservados)
+# Generado el 2026-11-21 con evidencias/verificar_backend.py (API real + SQLite temporal)
+
+[cuenta 222] POST /telegram/reservas  cuerpo={"cliente": "Pedro", "servicio": "corte", "fecha": "2026-11-30", "hora": "10:30", "confirmada": true, "solicitud_id": "solicitud-T20-C"}
+    -> HTTP 409 {"detail": "El intervalo solicitado se cruza con una reserva activa"}
+[cuenta 111] PUT /telegram/reservas/AF32116C  cuerpo={"servicio": "corte_barba", "fecha": "2026-11-30", "hora": "13:00"}
+    -> HTTP 200 {"codigo": "AF32116C", "cliente": "Laura", "servicio": "corte_barba", "fecha": "2026-11-30", "hora": "13:00", "duracion_minutos": 60, "estado": "activa", "propietario": "111", "solicitud_id": "solicitud-T18-A"}
+[cuenta 111] PUT /telegram/reservas/AF32116C  cuerpo={"servicio": "corte_barba", "fecha": "2026-11-30", "hora": "14:00"}
+    -> HTTP 409 {"detail": "El nuevo intervalo está ocupado"}
+SQLite> SELECT codigo, cliente, propietario, servicio, fecha, hora, estado FROM reservas ORDER BY fecha, hora
+    AF32116C | Laura | 111 | corte_barba | 2026-11-30 | 13:00 | activa
+    D7AEAB88 | Pedro | 222 | corte | 2026-11-30 | 14:00 | activa

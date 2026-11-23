@@ -4,6 +4,7 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8011
     environment:
       RESERVAS_DB: /data/reservas.db
+      API_PRIVATE_KEY: ${API_PRIVATE_KEY:-}
     volumes:
       - ./data:/data
     ports:
